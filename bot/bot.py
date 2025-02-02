@@ -1,15 +1,15 @@
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from bot.handlers import start, handle_audio
+from config import TELEGRAM_BOT_TOKEN
 
 def main():
-    from config import TELEGRAM_BOT_TOKEN
 
-    updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
-    dp = updater.dispatcher
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
     # Registra comandos y manejadores
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(Filters.voice, handle_audio))
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.AUDIO, handle_audio))
 
-    updater.start_polling()
-    updater.idle()
+    print("Handlers registered")
+
+    application.run_polling()

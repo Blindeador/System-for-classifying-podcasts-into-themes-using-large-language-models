@@ -1,4 +1,4 @@
 import os
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8107776185:AAH6Etmw07GDhwmmOLr3PuXpv5krkNPi2bg")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "tu_api_key_aqui")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "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")
