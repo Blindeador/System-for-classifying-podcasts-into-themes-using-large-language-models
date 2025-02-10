@@ -1,0 +1,5 @@
+http://localhost:8888/auth/login    //Ruta de login (para iniciar el proceso de autorización):
+
+http://localhost:8888/callback   //Spotify enviará los tokens de acceso y refresco a esta ruta
+
+http://localhost:8888/podcasts/search?q=technology  //Ruta para buscar podcasts (con un término de búsqueda)

@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from models.transcriber import transcribe_audio
+from models.transcriber import transcribe_audio_to_srt
 from models.classifier import classify_content
 from telegram.error import BadRequest
 
@@ -25,7 +25,7 @@ async def handle_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             await file.download_to_drive(file_path)
 
             # Transcripción y clasificación
-            transcription = transcribe_audio(file_path)
+            transcription = transcribe_audio_to_srt(file_path, output_srt_path='data/transcription.srt')
             classification = classify_content(transcription)
 
             await update.message.reply_text(f"Transcripción (resumida): {transcription[:100]}...")

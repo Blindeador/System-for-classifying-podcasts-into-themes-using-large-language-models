@@ -3,3 +3,4 @@ openai
 whisper
 ffmpeg
 pysrt
+npm install

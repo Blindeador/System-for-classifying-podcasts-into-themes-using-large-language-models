@@ -1,1 +1,6 @@
 venv/
+
+api/package-lock.json
+api/package.json
+
+api/node_modules/
