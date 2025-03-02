@@ -1,28 +1,51 @@
-import whisper
+from faster_whisper import WhisperModel as Whisper
+
+# def transcribe_audio_to_srt(file_path: str, output_srt_path: str) -> None:
+#     # Cargar el modelo Whisper
+#     model = whisper.load_model("base")
+    
+#     # Obtener la transcripción con segmentación
+#     result = model.transcribe(file_path, fp16=False)
+    
+#     # Convertir las segmentaciones a formato SRT
+#     srt_content = []
+    
+#     for i, segment in enumerate(result['segments'], start=1):
+#         start_time = format_time_srt(segment['start'])
+#         end_time = format_time_srt(segment['end'])
+#         text = segment['text']
+        
+#         # Crear cada entrada SRT
+#         srt_content.append(f"{i}\n{start_time} --> {end_time}\n{text}\n")
+    
+#     # Escribir el contenido en el archivo SRT
+#     with open(output_srt_path, 'w', encoding='utf-8') as srt_file:
+#         srt_file.writelines(srt_content)
+    
+#     print(f"Transcripción guardada en {output_srt_path}")
 
 def transcribe_audio_to_srt(file_path: str, output_srt_path: str) -> None:
-    # Cargar el modelo Whisper
-    model = whisper.load_model("base")
-    
-    # Obtener la transcripción con segmentación
-    result = model.transcribe(file_path, fp16=False)
-    
-    # Convertir las segmentaciones a formato SRT
+    # Cargar el modelo
+    model = Whisper("base", compute_type="int8")
+
+    # Procesar audio y obtener segmentos
+    segments, _ = model.transcribe(file_path)
+
     srt_content = []
-    
-    for i, segment in enumerate(result['segments'], start=1):
-        start_time = format_time_srt(segment['start'])
-        end_time = format_time_srt(segment['end'])
-        text = segment['text']
-        
+    for i, segment in enumerate(segments, start=1):
+        start_time = format_time_srt(segment.start)
+        end_time = format_time_srt(segment.end)
+        text = segment.text.strip()
+
         # Crear cada entrada SRT
         srt_content.append(f"{i}\n{start_time} --> {end_time}\n{text}\n")
-    
-    # Escribir el contenido en el archivo SRT
-    with open(output_srt_path, 'w', encoding='utf-8') as srt_file:
+
+    # Guardar transcripción
+    with open(output_srt_path, "w", encoding="utf-8") as srt_file:
         srt_file.writelines(srt_content)
-    
+
     print(f"Transcripción guardada en {output_srt_path}")
+    return "\n".join([s.text for s in segments])  
 
 def format_time_srt(seconds: float) -> str:
     """Convierte el tiempo en segundos a formato SRT (hh:mm:ss,ms)"""

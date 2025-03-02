@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 from models.transcriber import transcribe_audio_to_srt
-from models.classifier import classify_content
+from models.classifier import classify_content, summarize_content
 from telegram.error import BadRequest
 
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
@@ -26,10 +26,20 @@ async def handle_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
             # Transcripción y clasificación
             transcription = transcribe_audio_to_srt(file_path, output_srt_path='data/transcription.srt')
+            # Leer el archivo .srt
+            with open('data/transcription.srt', 'r', encoding='utf-8') as file:
+                transcription = file.read()
             classification = classify_content(transcription)
+            print("Clasificación:", classification)
+            resumen = summarize_content(transcription)
+            print("Resumen:", resumen)
 
-            await update.message.reply_text(f"Transcripción (resumida): {transcription[:100]}...")
-            await update.message.reply_text(f"Clasificación: {classification}")
+            if transcription:
+                await update.message.reply_text(f"Transcripción (resumida): {resumen}...")
+                await update.message.reply_text(f"Clasificación: {classification}")
+            else:
+                await update.message.reply_text("Error: No se pudo obtener la transcripción.")
+                
         except BadRequest as e:
             print(f"Error downloading file: {e}")
             await update.message.reply_text("Hubo un error al descargar el archivo de audio.")

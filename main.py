@@ -10,6 +10,7 @@ logging.basicConfig(
 def main():
     """Punto de entrada del sistema de clasificación de podcasts."""
     logging.info("Iniciando el sistema de clasificación de podcasts...")
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     
     # Llama a la función principal del bot
     start_bot()

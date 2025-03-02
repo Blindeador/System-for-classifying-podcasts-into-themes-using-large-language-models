@@ -12,4 +12,4 @@ def main():
 
     print("Handlers registered")
 
-    application.run_polling()
+    application.run_polling(poll_interval=5)
