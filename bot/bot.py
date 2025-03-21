@@ -8,7 +8,7 @@ def main():
 
     # Registra comandos y manejadores
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.AUDIO, handle_audio))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_audio))
 
     print("Handlers registered")
 
