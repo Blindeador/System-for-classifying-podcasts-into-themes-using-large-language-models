@@ -1,3 +1,4 @@
+import sys
 def contar_caracteres(nombre_archivo):
     """
     Función para contar caracteres en un archivo de texto.
@@ -30,7 +31,7 @@ def contar_caracteres(nombre_archivo):
             "Total de caracteres especiales": total_especiales,
             "Total de líneas": total_lineas
         }
-        
+        print(resultados)
         return resultados
         
     except FileNotFoundError:
@@ -40,11 +41,17 @@ def contar_caracteres(nombre_archivo):
 
 # Ejemplo de uso
 if __name__ == "__main__":
-    archivo = input("Ingresa la ruta del archivo de texto: ")
-    resultados = contar_caracteres(archivo)
+    # archivo = input("Ingresa la ruta del archivo de texto: ")
+    # resultados = contar_caracteres(archivo)
     
-    # Mostrar resultados
-    print("\nResultados del análisis:")
-    print("-" * 30)
-    for clave, valor in resultados.items():
-        print(f"{clave}: {valor}")
+    # # Mostrar resultados
+    # print("\nResultados del análisis:")
+    # print("-" * 30)
+    # for clave, valor in resultados.items():
+    #     print(f"{clave}: {valor}")
+    if len(sys.argv) != 2:
+        print("Uso: python num_caracteres.py archivo.txt")
+        sys.exit(1)
+    
+    archivo = sys.argv[1]
+    contar_caracteres(archivo)

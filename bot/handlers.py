@@ -5,7 +5,8 @@ import mimetypes
 from telegram import Update
 from telegram.ext import ContextTypes
 from models.transcriber import transcribe_audio_to_srt
-from models.classifier import classify_content, summarize_content
+from models.classifier import classify_content
+from models.preprocess import preprocess_podcast_transcript, extract_key_features
 from telegram.error import BadRequest
 
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
@@ -34,14 +35,46 @@ async def handle_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         # Transcribir el audio
         transcription = transcribe_audio_to_srt(file_path, output_srt_path='data/transcription.srt')
 
+        # Sin idioma
         with open('data/transcription.srt', 'r', encoding='utf-8') as file:
             transcription = file.read()
 
         classification = classify_content(transcription)
-        resumen = summarize_content(transcription)
+        # resumen = summarize_content(transcription)
 
-        await update.message.reply_text(f"Transcripción (resumida): {resumen[:400]}...")  # Evitar mensajes largos
+        # # Con idioma
+        # # Usar el idioma detectado
+        # language = transcription['language']
+        # language_probability = transcription['language_probability']
+        
+        # # Preprocesar con el idioma detectado
+        # processed_text = preprocess_podcast_transcript(
+        #     'data/transcription.srt',
+        #     language=language,
+        # )
+        
+        # # Extraer características
+        # key_features = extract_key_features(
+        #     processed_text, 
+        #     language=language
+        # )
+        # # Imprimir características para depuración
+        # print("Características principales:")
+        # for feature, score in key_features:
+        #     print(f"{feature}: {score}")
+
+        # with open('data/processed_transcription.txt', 'w', encoding='utf-8') as file:
+        #     file.write(processed_text)
+        
+        # classification = classify_content(processed_text)
+        # resumen = summarize_content(processed_text)
+
+        # await update.message.reply_text(f"Transcripción (resumida): {resumen[:400]}...")  # Evitar mensajes largos
         await update.message.reply_text(f"Clasificación: {classification}")
+
+        # Opcional: Enviar características clave
+        # features_text = "\n".join([f"{feature}: {score:.2f}" for feature, score in key_features])
+        # await update.message.reply_text(f"Características principales:\n{features_text}")
 
     except Exception as e:
         print(f"Error en el proceso: {e}")
