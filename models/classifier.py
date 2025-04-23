@@ -134,29 +134,35 @@ def classify_content(text: str) -> str:
     # """
     prompt = f"""Eres un experto en análisis de contenido de podcasts. Te proporcionaré la transcripción de un episodio completo. Tu tarea es:
 
-                1. CLASIFICACIÓN:
-                - Identifica el género principal y subgéneros del podcast
-                - Determina el público objetivo
-                - Establece un nivel de complejidad (básico, intermedio, avanzado)
+    1. CLASIFICACIÓN:
+    - Identifica el género principal y subgéneros del podcast
+    - Determina el público objetivo
+    - Establece un nivel de complejidad (básico, intermedio, avanzado)
+    Usa este formato exacto para la sección: **CLASIFICACIÓN**
 
-                2. RESUMEN EJECUTIVO:
-                - Crea un resumen conciso (máximo 150 palabras) que capture la esencia del episodio
-                - Incluye los 3-5 puntos clave discutidos
+    2. RESUMEN EJECUTIVO:
+    - Crea un resumen conciso (máximo 150 palabras) que capture la esencia del episodio
+    - Incluye los 3-5 puntos clave discutidos
+    Usa este formato exacto para la sección: **RESUMEN EJECUTIVO**
 
-                3. ANÁLISIS POR SEGMENTOS:
-                - Divide el contenido en segmentos de 10 minutos
-                - Para cada segmento, proporciona:
-                    * Una frase temática que capture la idea principal (máximo 15 palabras)
-                    * Los subtemas o puntos importantes mencionados
+    3. ANÁLISIS POR SEGMENTOS:
+    - Divide el contenido en segmentos de 10 minutos
+    - Para cada segmento, proporciona:
+        * Una frase temática que capture la idea principal (máximo 15 palabras)
+        * Los subtemas o puntos importantes mencionados
+    Usa este formato exacto para la sección: **ANÁLISIS POR SEGMENTOS**
 
-                4. RECOMENDACIONES:
-                - Basándote en la temática y/o autor, sugiere 3-5 podcasts similares que podrían interesar al oyente
-                - Para cada recomendación incluye:
-                    * Título del podcast
-                    * Breve descripción (1-2 frases)
-                    * Por qué es relevante para quien escuchó este episodio
+    4. RECOMENDACIONES:
+    - Basándote en la temática y/o autor, sugiere 3-5 podcasts similares que podrían interesar al oyente
+    - Para cada recomendación incluye:
+        * Título del podcast
+        * Breve descripción (1-2 frases)
+        * Por qué es relevante para quien escuchó este episodio
+    Usa este formato exacto para la sección: **RECOMENDACIONES**
 
-                La transcripción es la siguiente:{text}"""
+    MUY IMPORTANTE: Mantén exactamente el formato de los encabezados de sección como se muestra arriba.
+
+    La transcripción es la siguiente:{text}"""
 
     headers = {
         "Authorization": f"Bearer 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",

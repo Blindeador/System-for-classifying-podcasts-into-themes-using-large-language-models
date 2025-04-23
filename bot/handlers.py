@@ -2,14 +2,15 @@ import asyncio
 import os
 import yt_dlp
 import mimetypes
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from models.transcriber import transcribe_audio_to_srt
 from models.classifier import classify_content
 from models.preprocess import preprocess_podcast_transcript, extract_key_features
 from telegram.error import BadRequest
 
-MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
+MAX_LENGTH = 4000 # Longitud máxima del mensaje de Telegram
+user_data = {} # Diccionario temporal para almacenar resultados por usuario
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("¡Hola! Envíame la URL del podcast para analizarlo.")
@@ -40,6 +41,24 @@ async def handle_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             transcription = file.read()
 
         classification = classify_content(transcription)
+        print(classification)
+        # Guardamos el resultado completo
+        user_data[update.effective_user.id] = classification
+         # Mostramos solo la parte de clasificación
+        seccion_1 = extract_section(classification, 1)  # Función que separa la sección que quieras
+
+        # Enviar la clasificación al usuario
+        await update.message.reply_text(f"<b>🎙️ Clasificación del podcast:</b>\n\n{seccion_1}", parse_mode='HTML')
+
+        # Mostrar opciones
+        keyboard = [
+            [InlineKeyboardButton("📄 Resumen Ejecutivo", callback_data='resumen')],
+            [InlineKeyboardButton("📊 Análisis por Segmentos", callback_data='segmentos')],
+            [InlineKeyboardButton("💡 Recomendaciones", callback_data='recomendaciones')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text("¿Qué más deseas ver?", reply_markup=reply_markup)
+
         # resumen = summarize_content(transcription)
 
         # # Con idioma
@@ -70,7 +89,7 @@ async def handle_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         # resumen = summarize_content(processed_text)
 
         # await update.message.reply_text(f"Transcripción (resumida): {resumen[:400]}...")  # Evitar mensajes largos
-        await update.message.reply_text(f"Clasificación: {classification}")
+        # await update.message.reply_text(f"Clasificación: {classification}")
 
         # Opcional: Enviar características clave
         # features_text = "\n".join([f"{feature}: {score:.2f}" for feature, score in key_features])
@@ -78,7 +97,7 @@ async def handle_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     except Exception as e:
         print(f"Error en el proceso: {e}")
-        await update.message.reply_text("Hubo un error procesando el audio.")
+        await update.message.reply_text("⚠️ Ocurrió un error durante el procesamiento. Intenta de nuevo más tarde.")
 
 
 async def download_audio_from_url(url: str, output_path: str) -> bool:
@@ -127,3 +146,81 @@ async def download_audio_from_url(url: str, output_path: str) -> bool:
     except Exception as e:
         print(f"Error en la descarga: {e}")
         return False
+    
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    user_id = query.from_user.id
+    result = user_data.get(user_id, "")
+
+    if not result:
+        await query.edit_message_text("No se encontró información. ¿Podrías enviar otra URL?")
+        return
+
+    if query.data == "resumen":
+        text = extract_section(result, 2)
+    elif query.data == "segmentos":
+        text = extract_section(result, 3)
+    elif query.data == "recomendaciones":
+        text = extract_section(result, 4)
+    elif query.data == "fin":
+        user_data.pop(user_id, None)
+        await query.edit_message_text("Gracias por usar el analizador de podcasts 🎧. ¡Hasta la próxima!")
+        return
+    else:
+        text = "Opción no válida."
+
+    # Límite de longitud
+    MAX_LENGTH = 4000
+    if len(text) > MAX_LENGTH:
+        text = text[:MAX_LENGTH] + "\n\n[...] (contenido recortado)"
+
+    await query.edit_message_text(f"📌 Resultado:\n\n{text}", parse_mode='HTML')
+
+     # Mostrar botones de nuevo para seguir navegando
+    keyboard = [
+        [InlineKeyboardButton("2️⃣ Resumen Ejecutivo", callback_data='resumen')],
+        [InlineKeyboardButton("3️⃣ Análisis por Segmentos", callback_data='segmentos')],
+        [InlineKeyboardButton("4️⃣ Recomendaciones", callback_data='recomendaciones')],
+        [InlineKeyboardButton("❌ Terminar", callback_data='fin')]
+    ]
+    await query.message.reply_text(
+        "¿Deseas ver otra sección?",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+def extract_section(full_text: str, section_number: int) -> str:
+    import re
+    
+    # Estos son los patrones de encabezado en el nuevo formato
+    section_headers = [
+        "**CLASIFICACIÓN**",
+        "**RESUMEN EJECUTIVO**",
+        "**ANÁLISIS POR SEGMENTOS**",
+        "**RECOMENDACIONES**"
+    ]
+    
+    # Buscar las posiciones de inicio de cada sección
+    sections = []
+    for i, header in enumerate(section_headers, 1):
+        match = re.search(re.escape(header), full_text)
+        if match:
+            sections.append((i, match.start()))
+    
+    # Ordenar por posición en el texto
+    sections.sort(key=lambda x: x[1])
+    
+    # Buscar la sección solicitada
+    section_found = False
+    for i, (num, start) in enumerate(sections):
+        if num == section_number:
+            section_found = True
+            # Calcular el final (inicio de la siguiente sección o fin del texto)
+            end = sections[i+1][1] if i < len(sections)-1 else len(full_text)
+            return full_text[start:end].strip()
+    
+    if not section_found:
+        # Si no se encontró la sección, mostrar lo que se encontró para diagnóstico
+        found_sections = [f"Sección {num} en posición {pos}" for num, pos in sections]
+        return f"No se encontró la sección {section_number}. Secciones encontradas: {found_sections}"
