@@ -54,7 +54,9 @@ async def handle_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         keyboard = [
             [InlineKeyboardButton("📄 Resumen Ejecutivo", callback_data='resumen')],
             [InlineKeyboardButton("📊 Análisis por Segmentos", callback_data='segmentos')],
-            [InlineKeyboardButton("💡 Recomendaciones", callback_data='recomendaciones')]
+            [InlineKeyboardButton("💡 Recomendaciones", callback_data='recomendaciones')],
+            [InlineKeyboardButton("🆕 Analizar nuevo podcast", callback_data='nuevo_podcast')],
+            [InlineKeyboardButton("❌ Terminar", callback_data='fin')]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text("¿Qué más deseas ver?", reply_markup=reply_markup)
@@ -154,7 +156,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
     result = user_data.get(user_id, "")
 
-    if not result:
+    if not result and query.data != "nuevo_podcast":
         await query.edit_message_text("No se encontró información. ¿Podrías enviar otra URL?")
         return
 
@@ -164,6 +166,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = extract_section(result, 3)
     elif query.data == "recomendaciones":
         text = extract_section(result, 4)
+    elif query.data == "nuevo_podcast":
+        # Limpiar datos previos del usuario
+        user_data.pop(user_id, None)
+        await query.edit_message_text("¡Perfecto! Envíame la URL del nuevo podcast que quieres analizar.")
+        return
     elif query.data == "fin":
         user_data.pop(user_id, None)
         await query.edit_message_text("Gracias por usar el analizador de podcasts 🎧. ¡Hasta la próxima!")
@@ -171,10 +178,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         text = "Opción no válida."
 
-    # Límite de longitud
-    MAX_LENGTH = 4000
+    SUFFIX = "\n\n[...] (contenido recortado)"
+
     if len(text) > MAX_LENGTH:
-        text = text[:MAX_LENGTH] + "\n\n[...] (contenido recortado)"
+        # Restar la longitud del sufijo para que el total sea exactamente MAX_LENGTH
+        available_length = MAX_LENGTH - len(SUFFIX)
+        text = text[:available_length] + SUFFIX
 
     await query.edit_message_text(f"📌 Resultado:\n\n{text}", parse_mode='HTML')
 
@@ -183,10 +192,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("2️⃣ Resumen Ejecutivo", callback_data='resumen')],
         [InlineKeyboardButton("3️⃣ Análisis por Segmentos", callback_data='segmentos')],
         [InlineKeyboardButton("4️⃣ Recomendaciones", callback_data='recomendaciones')],
+        [InlineKeyboardButton("🆕 Analizar nuevo podcast", callback_data='nuevo_podcast')],
         [InlineKeyboardButton("❌ Terminar", callback_data='fin')]
     ]
     await query.message.reply_text(
-        "¿Deseas ver otra sección?",
+         "¿Deseas ver otra sección o analizar un nuevo podcast?",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 

@@ -161,6 +161,7 @@ def classify_content(text: str) -> str:
     Usa este formato exacto para la sección: **RECOMENDACIONES**
 
     MUY IMPORTANTE: Mantén exactamente el formato de los encabezados de sección como se muestra arriba.
+                    Ademas, sé conciso y asegúrate de que cada sección tenga menos de 4000 caracteres en total.
 
     La transcripción es la siguiente:{text}"""
 
