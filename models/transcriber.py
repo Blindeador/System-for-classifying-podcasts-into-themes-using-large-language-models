@@ -1,5 +1,7 @@
 from faster_whisper import WhisperModel as Whisper
 from pydub import AudioSegment
+import torch
+import gc
 import os
 import mimetypes
 import json
@@ -12,66 +14,158 @@ def format_time_srt(seconds):
     milliseconds = int((seconds % 1) * 1000)
     return f"{hours:02}:{minutes:02}:{seconds:02},{milliseconds:03}"
 
-model = Whisper("base", compute_type="int8")
+"""funcional tarda  2 minutos """
 
-def transcribe_audio_to_srt(file_path, output_srt_path):
-    """Transcribe un archivo de audio y guarda en un archivo SRT con segmentos de 5 minutos."""
+def transcribe_audio_to_srt(file_path, output_srt_path, chunk_size_minutes=10, model_size="tiny"):
+    """
+    Procesa archivos grandes dividiéndolos en fragmentos más pequeños
+    para una transcripción más rápida.
+    """
+    audio = AudioSegment.from_file(file_path)
+    
+    # Si el audio es menor a 20 minutos, procesarlo directamente
+    if len(audio) < 20 * 60 * 1000:
+        return transcribe_audio_to_srt(file_path, output_srt_path, model_size)
+    
+    # Dividir en fragmentos de {chunk_size_minutes} minutos
+    chunk_size_ms = chunk_size_minutes * 60 * 1000
+    chunks = []
+    
+    for i in range(0, len(audio), chunk_size_ms):
+        chunk = audio[i:i+chunk_size_ms]
+        chunk_file = f"temp_chunk_{i//chunk_size_ms}.wav"
+        chunk.export(chunk_file, format="wav")
+        chunks.append((chunk_file, i/1000))  # Guardar archivo y tiempo de inicio
+    
+    # Transcribir cada fragmento
+    all_segments = {}
+    five_minutes_in_seconds = 5 * 60
+    
+    for chunk_file, start_time in chunks:
+        # Cargar modelo para cada chunk (para evitar fugas de memoria)
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        compute_type = "float16" if device == "cuda" else "int8"
+        model = Whisper(model_size, device=device, compute_type=compute_type, download_root="./models")
+        
+        # Transcribir fragmento
+        segments, _ = model.transcribe(
+            chunk_file,
+            beam_size=1,
+            vad_filter=True,
+            vad_parameters=dict(min_silence_duration_ms=500),
+            temperature=0.5,
+            best_of=1
+        )
+        
+        # Procesar segmentos de este fragmento
+        for segment in segments:
+            # Ajustar tiempo de inicio al tiempo global
+            global_start = segment.start + start_time
+            interval_start = (global_start // five_minutes_in_seconds) * five_minutes_in_seconds
+            
+            if interval_start not in all_segments:
+                all_segments[interval_start] = []
+            
+            all_segments[interval_start].append(segment.text.strip())
+        
+        # Limpiar
+        del model
+        if device == "cuda":
+            torch.cuda.empty_cache()
+        gc.collect()
+        os.remove(chunk_file)
+    
+    # Crear archivo SRT
     srt_content = []
     current_index = 1
-    five_minutes_in_seconds = 5 * 60  # 5 minutos en segundos
+    sorted_intervals = sorted(all_segments.keys())
+    total_duration = len(audio) / 1000  # ms a segundos
     
-    # Transcribir el archivo de audio completo
-    segments, info = model.transcribe(file_path)
-    
-    # Obtener la duración total del audio (en segundos)
-    total_duration = info.duration
-    
-    # Crear diccionario para agrupar los textos por intervalos de 5 minutos
-    five_minute_segments = {}
-    
-    # Agrupar los segmentos en intervalos de 5 minutos
-    for segment in segments:
-        # Determinar a qué intervalo de 5 minutos pertenece este segmento
-        interval_start = (segment.start // five_minutes_in_seconds) * five_minutes_in_seconds
-        
-        # Si este intervalo no existe todavía, crearlo
-        if interval_start not in five_minute_segments:
-            five_minute_segments[interval_start] = []
-        
-        # Añadir el texto a este intervalo
-        five_minute_segments[interval_start].append(segment.text.strip())
-    
-    # Ordenar los intervalos
-    sorted_intervals = sorted(five_minute_segments.keys())
-    
-    # Crear las entradas SRT
     for i, interval_start in enumerate(sorted_intervals):
         start_time = format_time_srt(interval_start)
         
-        # El final de este intervalo es el inicio del siguiente, o la duración total
         if i < len(sorted_intervals) - 1:
             end_time = format_time_srt(sorted_intervals[i+1])
         else:
             end_time = format_time_srt(total_duration)
         
-        # Unir todos los textos de este intervalo
-        text = " ".join(five_minute_segments[interval_start])
-        
-        # Crear la entrada SRT
+        text = " ".join(all_segments[interval_start])
         srt_content.append(f"{current_index}\n{start_time} --> {end_time}\n{text}\n\n")
         current_index += 1
     
-    # Guardar en archivo SRT
+    # Guardar resultado
     with open(output_srt_path, "w", encoding="utf-8") as srt_file:
         srt_file.writelines(srt_content)
     
     print(f"Transcripción en segmentos de 5 minutos guardada en {output_srt_path}")
     
-    # Devolver el texto completo
+    # Devolver texto completo
     all_texts = []
     for interval in sorted_intervals:
-        all_texts.extend(five_minute_segments[interval])
+        all_texts.extend(all_segments[interval])
     return " ".join(all_texts)
+
+"""funcional tarda  5 minutos """
+# model = Whisper("base", compute_type="int8")
+
+# def transcribe_audio_to_srt(file_path, output_srt_path):
+#     """Transcribe un archivo de audio y guarda en un archivo SRT con segmentos de 5 minutos."""
+#     srt_content = []
+#     current_index = 1
+#     five_minutes_in_seconds = 5 * 60  # 5 minutos en segundos
+    
+#     # Transcribir el archivo de audio completo
+#     segments, info = model.transcribe(file_path)
+    
+#     # Obtener la duración total del audio (en segundos)
+#     total_duration = info.duration
+    
+#     # Crear diccionario para agrupar los textos por intervalos de 5 minutos
+#     five_minute_segments = {}
+    
+#     # Agrupar los segmentos en intervalos de 5 minutos
+#     for segment in segments:
+#         # Determinar a qué intervalo de 5 minutos pertenece este segmento
+#         interval_start = (segment.start // five_minutes_in_seconds) * five_minutes_in_seconds
+        
+#         # Si este intervalo no existe todavía, crearlo
+#         if interval_start not in five_minute_segments:
+#             five_minute_segments[interval_start] = []
+        
+#         # Añadir el texto a este intervalo
+#         five_minute_segments[interval_start].append(segment.text.strip())
+    
+#     # Ordenar los intervalos
+#     sorted_intervals = sorted(five_minute_segments.keys())
+    
+#     # Crear las entradas SRT
+#     for i, interval_start in enumerate(sorted_intervals):
+#         start_time = format_time_srt(interval_start)
+        
+#         # El final de este intervalo es el inicio del siguiente, o la duración total
+#         if i < len(sorted_intervals) - 1:
+#             end_time = format_time_srt(sorted_intervals[i+1])
+#         else:
+#             end_time = format_time_srt(total_duration)
+        
+#         # Unir todos los textos de este intervalo
+#         text = " ".join(five_minute_segments[interval_start])
+        
+#         # Crear la entrada SRT
+#         srt_content.append(f"{current_index}\n{start_time} --> {end_time}\n{text}\n\n")
+#         current_index += 1
+    
+#     # Guardar en archivo SRT
+#     with open(output_srt_path, "w", encoding="utf-8") as srt_file:
+#         srt_file.writelines(srt_content)
+    
+#     print(f"Transcripción en segmentos de 5 minutos guardada en {output_srt_path}")
+    
+#     # Devolver el texto completo
+#     all_texts = []
+#     for interval in sorted_intervals:
+#         all_texts.extend(five_minute_segments[interval])
+#     return " ".join(all_texts)
 
 
 
@@ -116,7 +210,7 @@ def transcribe_audio_to_srt(file_path, output_srt_path):
 # model = Whisper("base", compute_type="int8")
 
 # def split_audio(file_path, chunk_length=300000):
-#     """Divide el audio en partes de `chunk_length` milisegundos (600000 ms = 10 min)."""
+#     """Divide el audio en partes de chunk_length milisegundos (600000 ms = 10 min)."""
 #     audio = AudioSegment.from_file(file_path)
 #     chunks = [audio[i:i + chunk_length] for i in range(0, len(audio), chunk_length)]
 #     chunk_paths = []
