@@ -4,3 +4,7 @@ api/package-lock.json
 api/package.json
 
 api/node_modules/
+
+.cache/
+*.bin
+temp_chunk_*.wav
