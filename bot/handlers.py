@@ -8,9 +8,13 @@ from models.transcriber import transcribe_audio_to_srt
 from models.classifier import classify_content
 from models.preprocess import preprocess_podcast_transcript, extract_key_features
 from telegram.error import BadRequest
+from config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
 
 MAX_LENGTH = 4000 # Longitud máxima del mensaje de Telegram
 user_data = {} # Diccionario temporal para almacenar resultados por usuario
+client_id = os.getenv("SPOTIFY_CLIENT_ID", "b642f85fd62b4400b6f44b729dc0c4da")
+client_secret = os.getenv("SPOTIFY_CLIENT_SECRET", "147d056dbf354443872a8a1eff0b7c40")
+openrouter_api_key = os.getenv("OPENROUTER_API_KEY", "tu_clave_maverick")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("¡Hola! Envíame la URL del podcast para analizarlo.")
@@ -40,7 +44,7 @@ async def handle_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         with open('data/transcription.srt', 'r', encoding='utf-8') as file:
             transcription = file.read()
 
-        classification = classify_content(transcription)
+        classification = classify_content(transcription, SPOTIFY_CLIENT_ID ,SPOTIFY_CLIENT_SECRET)
         print(classification)
         # Guardamos el resultado completo
         user_data[update.effective_user.id] = classification
