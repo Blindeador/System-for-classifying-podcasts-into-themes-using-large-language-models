@@ -8,6 +8,7 @@ import mimetypes
 import logging
 import yt_dlp
 from config import AUDIO_PATH, TRANSCRIPT_PATH
+from bot.youtube import get_spotify_metadata
 from models.transcriber import transcribe_audio_to_srt
 from models.classifier import classify_content
 from config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
@@ -30,19 +31,42 @@ async def download_audio_from_url(url: str, output_path: str = AUDIO_PATH) -> bo
         # Asegurar que existe el directorio
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
-        # Opciones para yt-dlp
-        ydl_opts = {
-            "format": "bestaudio/best",
-            "outtmpl": output_path.replace(".wav", ".%(ext)s"),
-            "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"}],
-            "quiet": True,
-        }
-
-        # Ejecutar yt-dlp en un hilo separado para no bloquear
-        await asyncio.to_thread(lambda: yt_dlp.YoutubeDL(ydl_opts).download([url]))
-
-        # Buscar el archivo descargado
         base_name = output_path.replace(".wav", "")
+        
+        def attempt_download(download_url):
+            ydl_opts = {
+                "format": "bestaudio/best",
+                "outtmpl": base_name + ".%(ext)s",
+                "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"}],
+                "quiet": True,
+            }
+            yt_dlp.YoutubeDL(ydl_opts).download([download_url])
+
+        # Primer intento: descargar desde la URL original
+        try:
+            await asyncio.to_thread(lambda: attempt_download(url)) # Ejecutar yt-dlp en un hilo separado para no bloquear
+        except Exception as e:
+            logger.warning(f"Descarga desde URL original falló: {e}")
+            # Fallback a YouTube si es un enlace de Spotify
+            if "spotify.com" in url:
+                try:
+                    title, podcast = get_spotify_metadata(url)
+                    if not title:
+                        return False
+                    query = f"{title} {podcast}"
+                    yt_url = f"ytsearch1:{query}"
+                    
+                    if not yt_url:
+                        return False
+                    logger.info(f"URL alternativa encontrada en YouTube: {yt_url}")
+                    await asyncio.to_thread(lambda: attempt_download(yt_url))
+                except Exception as inner_e:
+                    logger.error(f"Fallo también el intento desde YouTube: {inner_e}")
+                    return False
+            else:
+                return False
+            
+        # Buscar el archivo descargado
         downloaded_file = None
 
         for ext in ["mp3", "m4a", "webm", "opus"]:

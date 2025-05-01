@@ -104,11 +104,26 @@ async def process_podcast_url(url: str, update: Update, context: ContextTypes.DE
         
         # Descargar audio
         success = await download_audio_from_url(url)
+        if not success and "open.spotify.com" in url:
+              # Intentar obtener el nombre del podcast desde los datos guardados
+            spotify_results = context.user_data.get("spotify_results", [])
+            selected_index = next(
+                (i for i, item in enumerate(spotify_results) if item["external_urls"]["spotify"] == url),
+                None
+            )
+            if selected_index is not None:
+                podcast_name = spotify_results[selected_index]["name"]
+                youtube_url = f"ytsearch1:{podcast_name}"
+                print(f"URL alternativa encontrada en YouTube: {youtube_url}")
+                
+                if youtube_url:
+                    success = await download_audio_from_url(youtube_url)
+
         if not success:
             await context.bot.edit_message_text(
                 chat_id=chat_id,
                 message_id=status_message.message_id,
-                text="⚠️ No pude descargar audio desde esa URL. Asegúrate de que sea un enlace válido."
+                text="⚠️ No pude descargar audio ni desde Spotify ni desde YouTube. Intenta con otro podcast."
             )
             return
 
