@@ -3,9 +3,9 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CommandHandler, MessageHandler, CallbackQueryHandler, filters
 
 from config import MAX_SEARCH_RESULTS
-from bot.utils import is_url, extract_section, format_long_message, store_user_data, get_user_data, clear_user_data
+from bot.utils import is_url, extract_section, format_long_message, store_user_data, get_user_data, clear_user_data, search_spotify_episodes
 from bot.audio import download_audio_from_url, transcribe_audio, analyze_content
-from models.classifier import search_spotify_podcasts, get_spotify_token
+from models.classifier import get_spotify_token
 from config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
 
 # Configuración de logging
@@ -70,7 +70,7 @@ async def search_podcasts(query: str, update: Update, context: ContextTypes.DEFA
     
     try:
         token = get_spotify_token(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
-        results = search_spotify_podcasts(query, token)
+        results = search_spotify_episodes(query, token)
 
         if not results:
             await update.message.reply_text("❌ No se encontraron resultados. ¿Puedes intentar con otro nombre?")
@@ -79,13 +79,22 @@ async def search_podcasts(query: str, update: Update, context: ContextTypes.DEFA
         # Guardar resultados temporalmente por usuario
         context.user_data["spotify_results"] = results
 
-        # Mostrar las opciones al usuario
+        # Mostrar nombre del episodio y podcast
         keyboard = [
-            [InlineKeyboardButton(f"{item['name']} - {item['publisher']}", callback_data=f"select_{i}")]
+            [InlineKeyboardButton(
+                f"{item.get('name', 'Sin nombre')} – {item.get('show', {}).get('name', 'Sin show')}",
+                callback_data=f"select_{i}"
+            )]
             for i, item in enumerate(results[:MAX_SEARCH_RESULTS])
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.message.reply_text("Selecciona un podcast para analizar:", reply_markup=reply_markup)
+        logger.info(f"Resultados de búsqueda: {results}")
+        # Verificar si el teclado tiene opciones
+        if keyboard:
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.message.reply_text("Selecciona un podcast para analizar:", reply_markup=reply_markup)
+        else:
+            await update.message.reply_text("❌ No se encontraron episodios en los resultados.")
     
     except Exception as e:
         logger.error(f"Error en la búsqueda: {e}", exc_info=True)
@@ -200,17 +209,21 @@ async def handle_podcast_selection(update: Update, context: ContextTypes.DEFAULT
         results = context.user_data.get("spotify_results", [])
 
         if not results or index >= len(results):
-            await query.edit_message_text("❌ No se pudo recuperar el podcast seleccionado.")
+            await query.edit_message_text("❌ No se pudo recuperar el episodio seleccionado.")
             return
 
-        selected_podcast = results[index]
-        external_url = selected_podcast["external_urls"]["spotify"]
-        
-        await query.edit_message_text(f"🔗 Podcast seleccionado: {selected_podcast['name']}\n⏳ Procesando...")
+        selected_episode = results[index]
+        episode_name = selected_episode.get("name", "Sin nombre")
+        external_url = selected_episode.get("external_urls", {}).get("spotify", "URL no disponible")
+
+        await query.edit_message_text(
+            f"🔗 Episodio seleccionado: <b>{episode_name}</b>\n⏳ Procesando...",
+            parse_mode='HTML'
+        )
         
         # Procesar la URL del podcast seleccionado
         await process_podcast_url(external_url, update, context)
-    
+
     except Exception as e:
         logger.error(f"Error al procesar la selección: {e}", exc_info=True)
         await query.edit_message_text("⚠️ Ocurrió un error. Intenta seleccionar otro podcast.")

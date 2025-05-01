@@ -3,7 +3,10 @@ Funciones de utilidad para el bot de análisis de podcasts.
 """
 
 import re
+import requests
+import requests
 import logging
+from bs4 import BeautifulSoup
 from config import MAX_LENGTH
 
 # Configuración de logging
@@ -12,6 +15,32 @@ logger = logging.getLogger(__name__)
 # Diccionario global para almacenar datos por usuario
 # En una implementación más robusta, esto debería ser una base de datos
 user_data = {}
+
+
+def get_spotify_metadata(spotify_url):
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+    response = requests.get(spotify_url, headers=headers)
+    if response.status_code != 200:
+        return None, None
+
+    html = BeautifulSoup(response.text, 'html.parser')
+    title_tag = html.find("meta", {"property": "og:title"})
+    podcast_tag = html.find("meta", {"property": "og:description"})
+
+    if title_tag and podcast_tag:
+        title = title_tag["content"]
+        podcast = podcast_tag["content"].split("·")[0].strip()
+        return title, podcast
+    return None, None
+
+def search_spotify_episodes(query, token):
+    headers = {'Authorization': f'Bearer {token}'}
+    params = {'q': query, 'type': 'episode', 'limit': 5}
+    response = requests.get('https://api.spotify.com/v1/search', headers=headers, params=params)
+    return response.json().get('episodes', {}).get('items', [])
+
 
 def is_url(text: str) -> bool:
     """

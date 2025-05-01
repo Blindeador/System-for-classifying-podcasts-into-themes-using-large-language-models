@@ -8,7 +8,7 @@ import mimetypes
 import logging
 import yt_dlp
 from config import AUDIO_PATH, TRANSCRIPT_PATH
-from bot.youtube import get_spotify_metadata
+from bot.utils import get_spotify_metadata
 from models.transcriber import transcribe_audio_to_srt
 from models.classifier import classify_content
 from config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
