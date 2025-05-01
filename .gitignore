@@ -5,6 +5,9 @@ api/package.json
 
 api/node_modules/
 
+# Ignorar audios grandes
+*.wav
+
 .cache/
 *.bin
 temp_chunk_*.wav
