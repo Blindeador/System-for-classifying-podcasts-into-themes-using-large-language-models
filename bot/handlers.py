@@ -17,7 +17,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Maneja el comando /start."""
     welcome_text = (
         "👋 ¡Bienvenido al Analizador de Podcasts!\n\n"
-        "📝 Puedes usar este bot de dos maneras:\n"
+        "Puedes usar este bot de dos maneras 🤖:\n"
         "1️⃣ Envía el nombre de un podcast para buscar en Spotify\n"
         "2️⃣ Envía directamente la URL de un episodio para analizarlo\n\n"
         "¿Con qué podcast te gustaría comenzar hoy?"
@@ -35,8 +35,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/start - Inicia el bot\n"
         "/help - Muestra este mensaje de ayuda\n\n"
         "*Una vez analizado un podcast, podrás ver:*\n"
-        "• 📄 Resumen Ejecutivo\n"
-        "• 📊 Análisis por Segmentos\n"
+        "• 🎬 Resumen Ejecutivo\n"
+        "• 🧩 Análisis por Segmentos\n"
         "• 💡 Recomendaciones"
     )
     await update.message.reply_text(help_text, parse_mode='Markdown')
@@ -104,6 +104,9 @@ async def process_podcast_url(url: str, update: Update, context: ContextTypes.DE
     """Procesa una URL de podcast: descarga, transcribe y clasifica."""
     chat_id = update.effective_chat.id
     
+    # Limpiar datos anteriores antes de procesar un nuevo podcast
+    clear_user_data(chat_id)
+    
     try:
         # Mensaje de descarga
         status_message = await context.bot.send_message(
@@ -140,7 +143,7 @@ async def process_podcast_url(url: str, update: Update, context: ContextTypes.DE
         await context.bot.edit_message_text(
             chat_id=chat_id,
             message_id=status_message.message_id,
-            text="🎙️ Audio descargado. Transcribiendo..."
+            text="Audio descargado.📝 Transcribiendo..."
         )
         
         # Transcribir audio
@@ -164,11 +167,11 @@ async def process_podcast_url(url: str, update: Update, context: ContextTypes.DE
         
         # Crear menú de opciones
         keyboard = [
-            [InlineKeyboardButton("📄 Resumen Ejecutivo", callback_data='resumen')],
-            [InlineKeyboardButton("📊 Análisis por Segmentos", callback_data='segmentos')],
+            [InlineKeyboardButton("🎬 Resumen Ejecutivo", callback_data='resumen')],
+            [InlineKeyboardButton("🧩 Análisis por Segmentos", callback_data='segmentos')],
             [InlineKeyboardButton("💡 Recomendaciones", callback_data='recomendaciones')],
-            [InlineKeyboardButton("🆕 Analizar nuevo podcast", callback_data='nuevo_podcast')],
-            [InlineKeyboardButton("❌ Terminar", callback_data='fin')]
+            [InlineKeyboardButton("🎙️ Analizar nuevo podcast", callback_data='nuevo_podcast')],
+            [InlineKeyboardButton("🚪 Terminar", callback_data='fin')]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -243,10 +246,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # Procesar según la opción seleccionada
     if query.data == "resumen":
         text = extract_section(result, 2)
-        title = "📄 Resumen Ejecutivo"
+        title = "🎬 Resumen Ejecutivo"
     elif query.data == "segmentos":
         text = extract_section(result, 3)
-        title = "📊 Análisis por Segmentos"
+        title = "🧩 Análisis por Segmentos"
     elif query.data == "recomendaciones":
         text = extract_section(result, 4)
         title = "💡 Recomendaciones"
@@ -271,11 +274,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     
     # Mostrar botones de nuevo para seguir navegando
     keyboard = [
-        [InlineKeyboardButton("📄 Resumen Ejecutivo", callback_data='resumen')],
-        [InlineKeyboardButton("📊 Análisis por Segmentos", callback_data='segmentos')],
+        [InlineKeyboardButton("🎬 Resumen Ejecutivo", callback_data='resumen')],
+        [InlineKeyboardButton("🧩 Análisis por Segmentos", callback_data='segmentos')],
         [InlineKeyboardButton("💡 Recomendaciones", callback_data='recomendaciones')],
-        [InlineKeyboardButton("🆕 Analizar nuevo podcast", callback_data='nuevo_podcast')],
-        [InlineKeyboardButton("❌ Terminar", callback_data='fin')]
+        [InlineKeyboardButton("🎙️ Analizar nuevo podcast", callback_data='nuevo_podcast')],
+        [InlineKeyboardButton("🚪 Terminar", callback_data='fin')]
     ]
     await query.message.reply_text(
         "¿Deseas ver otra sección o analizar un nuevo podcast?",
