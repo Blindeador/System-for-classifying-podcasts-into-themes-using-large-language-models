@@ -16,31 +16,73 @@ logger = logging.getLogger(__name__)
 # En una implementación más robusta, esto debería ser una base de datos
 user_data = {}
 
+#  Obtener token de Spotify
+def get_spotify_token(client_id, client_secret):
+    auth_response = requests.post(
+        'https://accounts.spotify.com/api/token',
+        data={'grant_type': 'client_credentials'},
+        auth=(client_id, client_secret)
+    )
+    return auth_response.json().get('access_token')
 
-def get_spotify_metadata(spotify_url):
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
-    response = requests.get(spotify_url, headers=headers)
-    if response.status_code != 200:
-        return None, None
+# Buscar podcasts en Spotify
+def search_spotify_podcasts(query, token):
+    headers = {'Authorization': f'Bearer {token}'}
+    params = {'q': query, 'type': 'show', 'limit': 5}
+    response = requests.get('https://api.spotify.com/v1/search', headers=headers, params=params)
+    return response.json().get('shows', {}).get('items', [])
 
-    html = BeautifulSoup(response.text, 'html.parser')
-    title_tag = html.find("meta", {"property": "og:title"})
-    podcast_tag = html.find("meta", {"property": "og:description"})
+# def get_spotify_metadata(spotify_url):
+#     headers = {
+#         "User-Agent": "Mozilla/5.0"
+#     }
+#     response = requests.get(spotify_url, headers=headers)
+#     if response.status_code != 200:
+#         return None, None
 
-    if title_tag and podcast_tag:
-        title = title_tag["content"]
-        podcast = podcast_tag["content"].split("·")[0].strip()
-        return title, podcast
-    return None, None
+#     html = BeautifulSoup(response.text, 'html.parser')
+#     title_tag = html.find("meta", {"property": "og:title"})
+#     podcast_tag = html.find("meta", {"property": "og:description"})
+
+#     if title_tag and podcast_tag:
+#         title = title_tag["content"]
+#         podcast = podcast_tag["content"].split("·")[0].strip()
+#         return title, podcast
+#     return None, None
 
 def search_spotify_episodes(query, token):
     headers = {'Authorization': f'Bearer {token}'}
     params = {'q': query, 'type': 'episode', 'limit': 5}
-    response = requests.get('https://api.spotify.com/v1/search', headers=headers, params=params)
-    return response.json().get('episodes', {}).get('items', [])
+    search_response = requests.get('https://api.spotify.com/v1/search', headers=headers, params=params)
 
+    if search_response.status_code != 200:
+        return []
+
+    raw_episodes = search_response.json().get('episodes', {}).get('items', [])
+    episodes = []
+
+    for ep in raw_episodes:
+        href = ep.get('href')
+        if not href:
+            continue
+
+        # Segunda petición para obtener datos completos del episodio
+        full_response = requests.get(href, headers=headers)
+        if full_response.status_code != 200:
+            continue
+
+        full_data = full_response.json()
+
+        episodes.append({
+            'episode_title': full_data.get('name'),
+            'podcast_name': full_data.get('show', {}).get('name'),
+            'publisher': full_data.get('show', {}).get('publisher'),
+            'spotify_url': full_data.get('external_urls', {}).get('spotify'),
+            'duration_ms': full_data.get('duration_ms'),
+            'audio_preview_url': full_data.get('audio_preview_url'),
+        })
+
+    return episodes
 
 def is_url(text: str) -> bool:
     """

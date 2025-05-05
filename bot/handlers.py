@@ -1,4 +1,6 @@
 import logging
+import json
+import requests
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CommandHandler, MessageHandler, CallbackQueryHandler, filters
 
@@ -82,13 +84,13 @@ async def search_podcasts(query: str, update: Update, context: ContextTypes.DEFA
         # Mostrar nombre del episodio y podcast
         keyboard = [
             [InlineKeyboardButton(
-                f"{item.get('name', 'Sin nombre')} – {item.get('show', {}).get('name', 'Sin show')}",
+                f"{item.get('episode_title', 'Sin título')} – {item.get('podcast_name', 'Sin podcast')}",
                 callback_data=f"select_{i}"
             )]
             for i, item in enumerate(results[:MAX_SEARCH_RESULTS])
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        logger.info(f"Resultados de búsqueda: {results}")
+
         # Verificar si el teclado tiene opciones
         if keyboard:
             reply_markup = InlineKeyboardMarkup(keyboard)
@@ -105,7 +107,7 @@ async def process_podcast_url(url: str, update: Update, context: ContextTypes.DE
     chat_id = update.effective_chat.id
     
     # Limpiar datos anteriores antes de procesar un nuevo podcast
-    clear_user_data(chat_id)
+    context.user_data.pop("classification", None)
     
     try:
         # Mensaje de descarga
@@ -116,16 +118,20 @@ async def process_podcast_url(url: str, update: Update, context: ContextTypes.DE
         
         # Descargar audio
         success = await download_audio_from_url(url)
+        # Fallback a YouTube si es un enlace de Spotify
         if not success and "open.spotify.com" in url:
-              # Intentar obtener el nombre del podcast desde los datos guardados
+            # Intentar obtener el nombre del podcast desde los datos guardados
             spotify_results = context.user_data.get("spotify_results", [])
             selected_index = next(
-                (i for i, item in enumerate(spotify_results) if item["external_urls"]["spotify"] == url),
+                (i for i, item in enumerate(spotify_results) if item.get("spotify_url") == url),
                 None
             )
+
             if selected_index is not None:
-                podcast_name = spotify_results[selected_index]["name"]
+                podcast_name = spotify_results[selected_index].get("episode_title")
+                
                 youtube_url = f"ytsearch1:{podcast_name}"
+
                 print(f"URL alternativa encontrada en YouTube: {youtube_url}")
                 
                 if youtube_url:
@@ -216,11 +222,16 @@ async def handle_podcast_selection(update: Update, context: ContextTypes.DEFAULT
             return
 
         selected_episode = results[index]
-        episode_name = selected_episode.get("name", "Sin nombre")
-        external_url = selected_episode.get("external_urls", {}).get("spotify", "URL no disponible")
+        episode_name = selected_episode.get("episode_title", "Sin nombre")
+        podcast_name = selected_episode.get("podcast_name", "Sin nombre")
+        external_url = selected_episode.get("spotify_url")
+
+        if not external_url:
+            await query.edit_message_text("❌ No se pudo obtener la URL del episodio en Spotify.")
+            return
 
         await query.edit_message_text(
-            f"🔗 Episodio seleccionado: <b>{episode_name}</b>\n⏳ Procesando...",
+            f"🔗 Episodio seleccionado: <b>{episode_name}</b>\nPodcast: <b>{podcast_name}</b>\n⏳ Procesando...",
             parse_mode='HTML'
         )
         

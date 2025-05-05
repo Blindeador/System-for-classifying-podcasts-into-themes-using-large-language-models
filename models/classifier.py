@@ -195,35 +195,24 @@
 #         return "Error desconocido: no se recibió una respuesta válida."
 
 from config import OPENROUTER_API_KEY, AUDIO_PATH
+from bot.utils import get_spotify_token, search_spotify_podcasts
 import requests
 import re
 from pydub import AudioSegment
 
 audio = AudioSegment.from_file(AUDIO_PATH)
 total_duration = len(audio) / 1000  # Duración total en segundos
-# Paso 1: Obtener token de Spotify
-def get_spotify_token(client_id, client_secret):
-    auth_response = requests.post(
-        'https://accounts.spotify.com/api/token',
-        data={'grant_type': 'client_credentials'},
-        auth=(client_id, client_secret)
-    )
-    return auth_response.json().get('access_token')
 
-# Paso 2: Buscar podcasts en Spotify
-def search_spotify_podcasts(query, token):
-    headers = {'Authorization': f'Bearer {token}'}
-    params = {'q': query, 'type': 'show', 'limit': 5}
-    response = requests.get('https://api.spotify.com/v1/search', headers=headers, params=params)
-    return response.json().get('shows', {}).get('items', [])
 
-# Paso 3: Llamada a Maverick para clasificación + resumen
+#  Llamada a Maverick para clasificación + resumen
 def analyze_with_maverick(transcription: str) -> str:
     
     prompt = f"""Eres un experto en análisis de contenido de podcasts. Te proporcionaré la transcripción de un episodio completo. Tu tarea es:
 
     1. **CLASIFICACIÓN**:
-    - Género principal: [Especificar la temática principal del podcast entre(humor y entretenimiento, música, cine y TV, cultura y sociedad, historia y humanidades, noticias y política, misterio, deportes, ciencia y medicina, salud y bienestar, empresa, tecnología, educación, finanzas y arte)]
+    - Género principal: [Especificar la temática principal del podcast entre(humor y entretenimiento, 
+    música, cine y TV, cultura y sociedad, historia y humanidades, noticias y política, misterio, deportes,
+    ciencia y medicina, salud y bienestar, empresa, tecnología, educación, finanzas y arte)]
     - Enumera subgéneros específicos relacionados con el contenido.
     - Determina el público objetivo.
     - Establece un nivel de complejidad (básico, intermedio, avanzado).
@@ -275,7 +264,7 @@ def analyze_with_maverick(transcription: str) -> str:
     response = requests.post("https://openrouter.ai/api/v1/chat/completions", json=body, headers=headers)
     return response.json()['choices'][0]['message']['content']
 
-# Paso 4: Extraer término ideal para buscar en Spotify
+# Extraer término ideal para buscar en Spotify
 def extract_query_for_spotify(analysis_text: str) -> str:
     prompt = f"""A partir del siguiente análisis de contenido de un pódcast, indica el mejor término o frase de búsqueda para encontrar podcasts similares en Spotify. Solo responde con la frase, sin explicaciones.
 
@@ -295,7 +284,7 @@ def extract_query_for_spotify(analysis_text: str) -> str:
     response = requests.post("https://openrouter.ai/api/v1/chat/completions", json=body, headers=headers)
     return response.json()['choices'][0]['message']['content'].strip()
 
-# Paso 5: Pedirle a la IA que genere recomendaciones a partir de resultados reales de Spotify
+# Pedirle a la IA que genere recomendaciones a partir de resultados reales de Spotify
 def format_recommendations_with_maverick(query: str, spotify_results) -> str:
     spotify_summaries = "\n".join(
         f"- {s['name']}: {s['description'][:200]}" for s in spotify_results
@@ -336,7 +325,7 @@ Redacta una sección de **RECOMENDACIONES** siguiendo explicitamente este format
 
     return response.json()['choices'][0]['message']['content'].strip()
 
-# Paso 6: Función principal final
+#  Función principal final
 def classify_content(transcription: str, client_id: str, client_secret: str) -> str:
     # Análisis inicial
     analysis = analyze_with_maverick(transcription)

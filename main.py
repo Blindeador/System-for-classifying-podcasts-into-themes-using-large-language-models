@@ -23,16 +23,19 @@ logger = logging.getLogger(__name__)
 def main() -> None:
     """Inicializa y ejecuta el bot de Telegram."""
     logger.info("Iniciando el bot de análisis de podcasts...")
-    
-    # Crear la aplicación
-    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
-    
-    # Configurar manejadores
-    setup_handlers(application)
-    
-    # Iniciar el bot
-    logger.info("Bot iniciado. Presiona Ctrl+C para detener.")
-    application.run_polling(poll_interval=5)
+    try:
+        # Crear la aplicación
+        application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+        
+        # Configurar manejadores
+        setup_handlers(application)
+        
+        # Iniciar el bot
+        logger.info("Bot iniciado. Presiona Ctrl+C para detener.")
+        application.run_polling(poll_interval=5)
+        
+    except Exception as e:
+        logger.error(f"Error al ejecutar el bot: {e}")
 
 if __name__ == '__main__':
     main()
