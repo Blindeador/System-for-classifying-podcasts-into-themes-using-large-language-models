@@ -1,72 +1,83 @@
-# System-for-classifying-podcasts-into-themes-using-large-language-models
+# System for Classifying Podcasts into Themes using Large Language Models  
 # 🎙 Podcast Classifier Bot  
-Un sistema para la **clasificación automática de podcasts** mediante el uso de **modelos grandes de lenguaje (LLMs)**, desplegado en un **bot de Telegram**.
 
-## 🚀 Funcionalidades
-- **Selección de Podcast:** En base a un nombre da a elegir al usuario Podcasta los que puede referirse gracias a la **Api-spotify**.
-- **Transcripción de audio:** Convierte archivos de podcast en texto utilizando [Faster-Whisper].
-- **Clasificación automática:** Clasifica el contenido del podcast en temáticas y genera resúmenes, analisis por segmento usando **Llama-Maverick**.
-- **Recomendaciones automáticas:** Recomienda en base al podcast seleccionado usando **Api-spotify** y **Llama-Maverick**.
-- **Interfaz de usuario:** Consulta información sobre los podcasts a través de un **bot de Telegram**.
+A system for **automatically classifying podcasts** using **Large Language Models (LLMs)**, deployed through a **Telegram bot**.
 
 ---
 
-## 🛠️ Tecnologías utilizadas
-- **Python** (backend y lógica del bot)
-- **Api-spotify** (Búsqueda y recomendación de podcast)
-- **Faster-Whisper** (transcripción de audio)
-- **Llama-Maverick** (análisis semántico)
-- **python-telegram-bot** (interacción con Telegram)
-- **FastAPI (opcional)** (para futuras integraciones)
-- **SQLite/PostgreSQL (opcional)** (almacenamiento de datos)
+## 🚀 Features
+
+- **Podcast Selection:** Based on a user query, it suggests matching podcasts using the **Spotify API**.
+- **Audio Transcription:** Converts podcast audio files into text using [Faster-Whisper].
+- **Automatic Classification:** Categorizes podcast content into themes, generates summaries, and performs segment-level analysis using **Llama-Maverick**.
+- **Recommendations:** Suggests related podcasts using **Spotify API** and **Llama-Maverick**.
+- **User Interface:** Access podcast information through a **Telegram bot**.
 
 ---
 
-## 📦 Estructura del proyecto
+## 🛠️ Technologies Used
+
+- **Python** – backend logic and bot core
+- **Spotify API** – podcast search and recommendations
+- **Faster-Whisper** – audio transcription
+- **Llama-Maverick** – semantic analysis and classification
+- **python-telegram-bot** – Telegram bot integration
+- **FastAPI (optional)** – for future web-based services
+- **SQLite/PostgreSQL (optional)** – data storage and querying
+
+---
+
+## 📦 Project Structure
+
 ```plaintext
 podcast-classifier-bot/
-├── bot/                     # Lógica de procesamiento y manejo de solicitudes
-│   ├── audio.py             # Funciones relacionadas con el análisis de audio
-│   ├── handlers.py          # Controladores para manejar flujos de datos
-│   └── utils.py             # Funciones que sirven de utilidad
-├── data/                    # Archivos de datos (transcripciones, audios, etc.)
-│   └── transcription.srt    # Ejemplo de transcripción en formato SRT
-├── models/                  # Modelos y lógica de clasificación
-│   ├── classifier.py        # Clasificación, análisis y recomendaciones
-│   └── transcriber.py       # Transcripción del audio
-├── requirements.txt         # Dependencias del proyecto
-├── README.md                # Documentación del proyecto
-├── config.py                # Configuración de variables de entorno
-├── main.py                  # Punto de entrada del sistema
+├── bot/                     # Processing logic and user interaction
+│   ├── audio.py             # Audio analysis functions
+│   ├── handlers.py          # Handlers for data flow and bot responses
+│   └── utils.py             # General utility functions
+├── data/                    # Data files (transcripts, audio, etc.)
+│   └── transcription.srt    # Sample transcription in SRT format
+├── models/                  # Core classification and transcription logic
+│   ├── classifier.py        # Classification, analysis, and recommendations
+│   └── transcriber.py       # Audio transcription module
+├── requirements.txt         # Project dependencies
+├── README.md                # Project documentation
+├── config.py                # Environment variable configuration
+├── main.py                  # System entry point
 └── .gitignore               
 ```
 
-## Requisitos previos
+## Prerequisites
 Antes de comenzar, asegúrate de tener instalado lo siguiente:
 
-- Python 3.8 o superior
-- Pip para la gestión de paquetes
-- Una cuenta en OpenRouter para acceder a la API de modelos de lenguaje
-- Credenciales de cliente de Spotify (Client ID y Client Secret)
+Make sure you have the following installed and available before starting:
+
+  - 🐍 Python 3.8 or later
+  
+  - 📦 Pip (Python package manager)
+  
+  - 🔑 An account on OpenRouter for LLM API access
+  
+  - 🎧 Spotify API credentials (Client ID and Client Secret)
 
 ---
 
-## Instalación
-1. Clona el repositorio:
+##  Installation
+1. Clone the repository:
 ```bash
 git clone https://github.com/tu-usuario/system-for-classifying-podcasts-into-themes-using-large-language-models.git
 cd system-for-classifying-podcasts-into-themes-using-large-language-models
 ```
-2. Crea un entorno virtual (opcional pero recomendado):
+2. Create a virtual environment (recommended):
 ```bash
 python -m venv venv
 source venv/bin/activate  # En Windows: venv\Scripts\activate
 ```
-3. Instala las dependencias:
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
-4. Configura las credenciales:
+4. Configure your credentials:
 - Crea un archivo config.py en la raíz del proyecto con el siguiente contenido:
 ```bash
 TELEGRAM_BOT_TOKEN = "tu_clave_del_bot_telegram"
@@ -79,7 +90,7 @@ MAX_LENGTH = 4000  # Longitud máxima del mensaje de Telegram
 MAX_SEARCH_RESULTS = 3  # Número máximo de resultados de búsqueda a mostrar
 ```
 
-## Ejecución
+## Running the Bot
 
 1. Ejecuta el análisis de un podcast: Asegúrate de que el archivo de audio esté configurado en config.py y ejecuta el script principal:
 
@@ -87,9 +98,12 @@ MAX_SEARCH_RESULTS = 3  # Número máximo de resultados de búsqueda a mostrar
 python main.py
 ```
 
-2. Resultados esperados:
+2. Expected Outputs:
 
-Clasificación temática: Género principal, subgéneros, público objetivo y nivel de complejidad.
-Resumen ejecutivo: Un resumen breve con los puntos clave del episodio.
-Análisis por segmentos: División del contenido en segmentos con frases temáticas y subtemas.
-Recomendaciones: Podcasts similares encontrados en Spotify.
+  -🎯 Topic Classification: Detects main genre, sub-genres, target audience, and complexity.
+  
+  -📄 Executive Summary: Concise summary with key takeaways from the episode.
+  
+  -🧩 Segment Analysis: Breaks content into sections with thematic and topical labeling.
+  
+  -🎙 Podcast Recommendations: Recommends similar content using Spotify and LLM results.
