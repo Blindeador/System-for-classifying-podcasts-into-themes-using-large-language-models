@@ -339,7 +339,7 @@ def transcribe_audio_to_srt(file_path, output_srt_path, chunk_size_minutes=10, m
                 # Transcribir fragmento
                 segments, _ = model.transcribe(
                     chunk_file,
-                    beam_size=1,
+                    beam_size=1, 
                     vad_filter=True,
                     vad_parameters=dict(min_silence_duration_ms=500),
                     temperature=0.5,

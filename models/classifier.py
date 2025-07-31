@@ -210,9 +210,9 @@ def analyze_with_maverick(transcription: str) -> str:
     prompt = f"""Eres un experto en análisis de contenido de podcasts. Te proporcionaré la transcripción de un episodio completo. Tu tarea es:
 
     1. **CLASIFICACIÓN**:
-    - Género principal: [Especificar la temática principal del podcast entre(humor y entretenimiento, 
+    - Género principal: [Especificar la temática principal del podcast solo una entre(humor y entretenimiento, 
     música, cine y TV, cultura y sociedad, historia y humanidades, noticias y política, misterio, deportes,
-    ciencia y medicina, salud y bienestar, empresa, tecnología, educación, finanzas y arte)]
+    ciencia y medicina, salud y bienestar, empresa, tecnología, educación, finanzas y arte)Si hay dos o más géneros con porcentajes de selección similares, prioriza el género más específico sobre el más general. Por ejemplo, si "historia y humanidades" y "cultura y sociedad" están empatados, elige "historia y humanidades". Aplica este criterio especialmente cuando la diferencia entre los porcentajes sea menor al 5%.]
     - Enumera subgéneros específicos relacionados con el contenido.
     - Determina el público objetivo.
     - Establece un nivel de complejidad (básico, intermedio, avanzado).
@@ -225,9 +225,6 @@ def analyze_with_maverick(transcription: str) -> str:
 
     3. **ANÁLISIS POR SEGMENTOS**:
     - Divide el episodio en un máximo de 10 segmentos equilibrados.
-    - Usa la duración total del audio ({total_duration:.2f} segundos) como referencia para calcular la longitud de cada segmento.
-    - Si no es posible dividir exactamente en 10 segmentos, ajusta el número para que sean lo más equilibrados posible.
-    - Usa los tiempos de inicio y fin de cada segmento de la transcripción en formato SRT para determinar la duración.
     - Para cada segmento, proporciona:
       * Una frase temática que capture la idea principal (máximo 15 palabras).
       * Los subtemas o puntos importantes mencionados.

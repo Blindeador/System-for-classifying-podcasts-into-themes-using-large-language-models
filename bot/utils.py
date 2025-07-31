@@ -4,7 +4,6 @@ Funciones de utilidad para el bot de análisis de podcasts.
 
 import re
 import requests
-import requests
 import logging
 from bs4 import BeautifulSoup
 from config import MAX_LENGTH
