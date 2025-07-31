@@ -100,10 +100,10 @@ python main.py
 
 2. Expected Outputs:
 
-  -🎯 Topic Classification: Detects main genre, sub-genres, target audience, and complexity.
+  - 🎯 Topic Classification: Detects main genre, sub-genres, target audience, and complexity.
   
-  -📄 Executive Summary: Concise summary with key takeaways from the episode.
+  - 📄 Executive Summary: Concise summary with key takeaways from the episode.
   
-  -🧩 Segment Analysis: Breaks content into sections with thematic and topical labeling.
+  - 🧩 Segment Analysis: Breaks content into sections with thematic and topical labeling.
   
-  -🎙 Podcast Recommendations: Recommends similar content using Spotify and LLM results.
+  - 🎙 Podcast Recommendations: Recommends similar content using Spotify and LLM results.
